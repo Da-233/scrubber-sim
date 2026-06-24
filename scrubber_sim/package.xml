@@ -19,6 +19,7 @@
   <depend>xacro</depend>
   <depend>robot_state_publisher</depend>
   <depend>joint_state_publisher</depend>
+  <depend>tf2_ros</depend>
   <depend>ros_gz_sim</depend>
   <depend>ros_gz_bridge</depend>
 

@@ -41,6 +41,8 @@ def generate_launch_description():
         output="screen",
     )
 
+    # 注意：不再桥 gz 的 /odom，也不桥 /model/scrubber/tf。
+    # odom->base_footprint 由自研 wheel_odometry 节点发布（gz 自算 odom 失真）。
     gz_bridge = Node(
         package="ros_gz_bridge",
         executable="parameter_bridge",
@@ -49,17 +51,20 @@ def generate_launch_description():
         ],
         arguments=[
             "/scan@sensor_msgs/msg/LaserScan[gz.msgs.LaserScan",
-            "/odom@nav_msgs/msg/Odometry[gz.msgs.Odometry",
             "/cmd_vel@geometry_msgs/msg/Twist]gz.msgs.Twist",
             "/joint_states@sensor_msgs/msg/JointState[gz.msgs.Model",
             "/imu/data@sensor_msgs/msg/Imu[gz.msgs.IMU",
-            # odom->base_footprint TF（gz 端 model tf 桥到 ROS /tf）
-            "/model/scrubber/tf@tf2_msgs/msg/TFMessage[gz.msgs.Pose_V",
-        ],
-        remappings=[
-            ("/model/scrubber/tf", "/tf"),
         ],
         output="screen",
+    )
+
+    # 自研轮式里程计：订阅 /joint_states，发布 /odom + odom->base_footprint TF
+    wheel_odom = Node(
+        package="scrubber_sim",
+        executable="wheel_odometry",
+        name="wheel_odometry",
+        output="screen",
+        parameters=[{"use_sim_time": True}],
     )
 
     return LaunchDescription([
@@ -67,4 +72,5 @@ def generate_launch_description():
         robot_state_pub,
         gz_spawn,
         gz_bridge,
+        wheel_odom,
     ])

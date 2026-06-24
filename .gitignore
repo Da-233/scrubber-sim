@@ -7,3 +7,7 @@ __pycache__/
 .DS_Store
 *.bag
 *.log
+
+# 备份文件
+*.bak
+*.bak.*

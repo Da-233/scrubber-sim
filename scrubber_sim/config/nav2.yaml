@@ -119,8 +119,8 @@ global_costmap:
       height: 30
       origin_x: -15.0
       origin_y: -15.0
-      track_unknown_space: true
-      plugins: ["static_layer", "obstacle_layer", "inflation_layer"]
+      track_unknown_space: false
+      plugins: ["obstacle_layer", "inflation_layer"]
       obstacle_layer:
         plugin: "nav2_costmap_2d::ObstacleLayer"
         enabled: true
@@ -147,9 +147,9 @@ global_costmap:
       inflation_layer:
         plugin: "nav2_costmap_2d::InflationLayer"
         enabled: true
-        inflation_radius: 1.25
+        inflation_radius: 0.8
         cost_scaling_factor: 3.0
-        inflate_around_unknown: true
+        inflate_around_unknown: false
       always_send_full_costmap: true
 
 local_costmap:
@@ -188,9 +188,9 @@ local_costmap:
       inflation_layer:
         plugin: "nav2_costmap_2d::InflationLayer"
         enabled: true
-        inflation_radius: 1.20
+        inflation_radius: 0.75
         cost_scaling_factor: 3.0
-        inflate_around_unknown: true
+        inflate_around_unknown: false
       always_send_full_costmap: true
 
 velocity_smoother:

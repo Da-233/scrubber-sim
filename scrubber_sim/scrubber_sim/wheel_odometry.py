@@ -43,6 +43,9 @@ class WheelOdometry(Node):
         self.declare_parameter("rear_right_joint", "rear_right_wheel_joint")
         self.declare_parameter("steering_joint", "steering_joint")
         self.declare_parameter("publish_tf", True)
+        # 诊断开关：debug=True 时周期性打印内部状态；debug_every=每多少帧打印一次
+        self.declare_parameter("debug", True)
+        self.declare_parameter("debug_every", 20)
 
         self.wheel_radius = self.get_parameter("wheel_radius").value
         self.wheel_base = self.get_parameter("wheel_base").value
@@ -52,12 +55,20 @@ class WheelOdometry(Node):
         self.rr_joint = self.get_parameter("rear_right_joint").value
         self.steer_joint = self.get_parameter("steering_joint").value
         self.publish_tf = self.get_parameter("publish_tf").value
+        self.debug = self.get_parameter("debug").value
+        self.debug_every = self.get_parameter("debug_every").value
 
         # 位姿状态
         self.x = 0.0
         self.y = 0.0
         self.theta = 0.0
         self.last_time = None
+
+        # 诊断累计量
+        self.frame_count = 0        # 处理过的帧数
+        self.path_length = 0.0      # 累计行驶路程（|v|*dt 之和）
+        self.first_stamp = None     # 首帧时间
+        self.warned_joint = False   # 关节缺失只警告一次
 
         qos = QoSProfile(depth=10, reliability=ReliabilityPolicy.BEST_EFFORT,
                          history=HistoryPolicy.KEEP_LAST)
@@ -85,6 +96,12 @@ class WheelOdometry(Node):
             wr = msg.velocity[name2idx[self.rr_joint]]
             delta = msg.position[name2idx[self.steer_joint]]
         except (KeyError, IndexError):
+            # 关节缺失：警告一次，把实际收到的关节名打出来，方便定位命名不匹配
+            if not self.warned_joint:
+                self.get_logger().warn(
+                    f"[odom] 关节缺失！期望 [{self.rl_joint}, {self.rr_joint}, "
+                    f"{self.steer_joint}]，实际收到 {list(msg.name)}")
+                self.warned_joint = True
             return
 
         # 线速度 = 后轮平均角速度 * 轮半径
@@ -97,6 +114,22 @@ class WheelOdometry(Node):
         self.y += v * math.sin(self.theta + 0.5 * omega * dt) * dt
         self.theta += omega * dt
         self.theta = math.atan2(math.sin(self.theta), math.cos(self.theta))
+
+        # ---- 诊断累计 ----
+        self.frame_count += 1
+        self.path_length += abs(v) * dt
+        if self.first_stamp is None:
+            self.first_stamp = t
+
+        # ---- 周期性诊断输出：把输入/中间量/状态全暴露 ----
+        if self.debug and (self.frame_count % self.debug_every == 0):
+            straight = math.hypot(self.x, self.y)   # 起点到当前的直线距离
+            self.get_logger().info(
+                f"[odom#{self.frame_count}] dt={dt:.3f} "
+                f"in: wl={wl:.2f} wr={wr:.2f} δ={delta:.3f}rad "
+                f"| calc: v={v:.3f}m/s ω={omega:.3f}rad/s "
+                f"| pose: x={self.x:.3f} y={self.y:.3f} θ={self.theta:.3f} "
+                f"| 路程={self.path_length:.2f} 直线={straight:.2f}")
 
         q = yaw_to_quat(self.theta)
 

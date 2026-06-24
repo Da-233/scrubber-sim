@@ -240,10 +240,13 @@
       <min_acceleration>-1.0</min_acceleration>
       <max_acceleration>1.0</max_acceleration>
       <topic>cmd_vel</topic>
-      <odom_topic>odom</odom_topic>
-      <frame_id>odom</frame_id>
-      <child_frame_id>base_footprint</child_frame_id>
-      <odom_publish_frequency>50</odom_publish_frequency>
+      <!-- AckermannSteering 只做驱动；odom 由自研 wheel_odometry 节点发布
+           （gz 在三轮单驱单转布局下自算 odom 失真）。把其 odom 引到废弃话题/frame，
+           避免与自研节点双发 odom->base_footprint TF 冲突。 -->
+      <odom_topic>gz_odom_unused</odom_topic>
+      <frame_id>gz_odom_unused</frame_id>
+      <child_frame_id>gz_base_unused</child_frame_id>
+      <odom_publish_frequency>0</odom_publish_frequency>
     </plugin>
 
     <plugin filename="gz-sim-joint-state-publisher-system"
