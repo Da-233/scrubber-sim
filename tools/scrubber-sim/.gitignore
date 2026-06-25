@@ -1,0 +1,7 @@
+# pytest 生成的 fixture 文件
+tests/fixtures/*.pgm
+tests/fixtures/*.yaml
+tests/fixtures/__pycache__/
+__pycache__/
+*.pyc
+.pytest_cache/

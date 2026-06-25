@@ -60,9 +60,21 @@ These are hard-won lessons from getting the stack to actually run on ROS 2 Jazzy
 - **Custom odometry** (`wheel_odometry.py`): the gz `AckermannSteering` system's built-in odometry is unreliable for this single-front-wheel three-wheel layout (it overshoots/drifts even with correct geometry params). We instead integrate a bicycle model from `/joint_states` (rear-wheel velocity → linear speed, steering-joint angle → yaw rate). This matches the real vehicle's STM32 wheel-odometry, so sim and hardware share the same model.
 - **gz launch** must pass `-r` (run), otherwise the sim starts paused and no sensor data flows.
 
+## Tools
+
+Standalone Python helpers under `tools/scrubber-sim/` (no ROS 2 runtime needed, run + test locally):
+
+- **`map_to_polygons/`** — SLAM `map.pgm` → obstacle polygon list (F2C inner voids) via `cv2.findContours` + `approxPolyDP` + pixel→world transform. Feeds the complete-coverage goal so the planner routes *around* mapped static obstacles.
+- **`coverage_meter/`** — actual coverage measurement by **footprint sweep** (not path-length estimate). Stamps the cleaning footprint along the recorded trajectory onto a grid, intersects with the cleanable area (outer − voids), and reports coverage %, swept-obstacle area (collision alarm) and overspray area, with a visualization.
+
+```bash
+cd tools/scrubber-sim
+python3 -m pytest tests/ -q     # 28 tests
+```
+
 ## Status
 
-Mapping closed-loop works end to end. Single-goal navigation is being finalized alongside the custom odometry integration.
+Mapping closed-loop + single-goal navigation work end to end. Complete-coverage (boustrophedon) path planning is integrated via F2C + opennav_coverage; current work is the two-layer obstacle-avoidance architecture (static voids upstream + collision-detection/recovery downstream).
 
 ## License
 
