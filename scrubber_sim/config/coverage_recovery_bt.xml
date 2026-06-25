@@ -1,0 +1,47 @@
+<!--
+  M5.3 A6: 带 recovery 的弓字形全覆盖 BT（阿卡曼安全版）
+
+  在 opennav_coverage 默认 navigate_w_basic_complete_coverage.xml 基础上,
+  用 nav2 内置 BT 节点加双层 RecoveryBranch(不写自定义节点):
+
+    外层 RecoveryNode(重试 3 次):
+      ├─ 主干 Sequence:
+      │    ├─ RateController(hz≈0,只算一次) → ComputeCoveragePath  ← F2C 贵,不频繁重算
+      │    └─ 内层 RecoveryNode(重试 6 次):
+      │         ├─ FollowPath
+      │         └─ 内层 recovery: 清局部 costmap + Wait 2s  ← 瞬时碰撞便宜兜
+      └─ 外层 recovery: 清全局 costmap + Wait 3s             ← 大故障才重算路径
+
+  ★ 阿卡曼车不能 Spin / BackUp,recovery 只用 ClearCostmap + Wait(就地等障碍走开/
+    清掉残影),不放任何旋转或倒车节点。动态障碍(行人/慢车)走这条 recovery 兜。
+  ★ feedback.number_of_recoveries 由 RecoveryNode 触发计数 → A8 判据 recoveries≤3 取这个。
+-->
+<root BTCPP_format="4" main_tree_to_execute="MainTree">
+  <BehaviorTree ID="MainTree">
+    <RecoveryNode number_of_retries="3" name="CoverageRecovery">
+      <Sequence name="ComputeThenFollow">
+        <RateController hz="0.0000001">
+          <ComputeCoveragePath nav_path="{path}"
+                               polygons="{field_polygon}"
+                               polygons_frame_id="{polygon_frame_id}"
+                               error_code_id="{compute_coverage_error_code}"/>
+        </RateController>
+        <RecoveryNode number_of_retries="6" name="FollowPathRecovery">
+          <FollowPath path="{path}"
+                      controller_id="FollowPath"
+                      error_code_id="{follow_path_error_code}"/>
+          <Sequence name="FollowRecoveryActions">
+            <ClearEntireCostmap name="ClearLocalCostmap"
+                                service_name="local_costmap/clear_entirely_local_costmap"/>
+            <Wait wait_duration="2.0"/>
+          </Sequence>
+        </RecoveryNode>
+      </Sequence>
+      <Sequence name="ComputeRecoveryActions">
+        <ClearEntireCostmap name="ClearGlobalCostmap"
+                            service_name="global_costmap/clear_entirely_global_costmap"/>
+        <Wait wait_duration="3.0"/>
+      </Sequence>
+    </RecoveryNode>
+  </BehaviorTree>
+</root>

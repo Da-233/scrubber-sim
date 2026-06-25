@@ -82,6 +82,15 @@ outer: [[x, y], ...]            # 清扫外圈
 voids: [[[x, y], ...], ...]     # 障碍 inner voids(从可清扫区挖掉 + 扫到报警)
 ```
 
+### contour_coverage (P1, M5.3 子系统#1)
+
+同心轮廓覆盖路径生成器（M5.3 spec §5.2 实现）。
+
+输入 polygon (outer + voids)，输出同心环 + 段间连接的 pose 序列，喂 Nav2 FollowPath。
+几何上证明不穿障（任意环到障碍距离 ≥ safety_margin）。F2C 路线终结后的替代方案。
+
+详见 `contour_coverage/README.md`。
+
 ## 测试 fixture
 
 `tests/fixtures/` 下的 `.pgm`/`.yaml` 是 pytest 自动生成的合成 map，

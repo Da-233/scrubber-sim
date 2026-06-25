@@ -1,0 +1,67 @@
+<?xml version="1.0" ?>
+<!--
+  P2 隔离验证场景：7×7m 空房间，无障碍（单 component 同心环）
+  = room_7x7.sdf 删掉 box_a / box_b。
+  用途：隔离验证 RPP 能否跟同心环 + 覆盖率公式 + 时间戳修复, 排除多 component
+        段间连接缺陷的干扰。墙 ±3.5 给 SLAM 特征, 机器人 spawn 原点。
+-->
+<sdf version="1.10">
+  <world name="room_nobox">
+    <scene>
+      <ambient>0.4 0.4 0.4 1</ambient>
+      <background>0.7 0.7 0.7 1</background>
+    </scene>
+
+    <physics name="1ms" type="ignored">
+      <max_step_size>0.001</max_step_size>
+      <real_time_factor>1</real_time_factor>
+    </physics>
+
+    <plugin filename="gz-sim-physics-system" name="gz::sim::systems::Physics"></plugin>
+    <plugin filename="gz-sim-user-commands-system" name="gz::sim::systems::UserCommands"></plugin>
+    <plugin filename="gz-sim-scene-broadcaster-system" name="gz::sim::systems::SceneBroadcaster"></plugin>
+
+    <light type="directional" name="sun">
+      <pose>0 0 10 0 0 0</pose>
+      <intensity>0.8</intensity>
+      <cast_shadows>true</cast_shadows>
+    </light>
+
+    <model name="ground_plane">
+      <static>true</static>
+      <link name="link">
+        <collision name="collision">
+          <geometry>
+            <plane><normal>0 0 1</normal><size>40 40</size></plane>
+          </geometry>
+        </collision>
+        <visual name="visual">
+          <geometry>
+            <plane><normal>0 0 1</normal><size>40 40</size></plane>
+          </geometry>
+          <material>
+            <ambient>0.6 0.6 0.6 1</ambient>
+            <diffuse>0.6 0.6 0.6 1</diffuse>
+            <specular>0.2 0.2 0.2 1</specular>
+          </material>
+        </visual>
+      </link>
+    </model>
+
+    <!-- 围墙：7x7 房间（墙中心在 ±3.5，墙长 7） -->
+    <model name="walls">
+      <static>true</static>
+      <link name="link">
+        <collision name="w_n"><pose>0 3.5 0.5 0 0 0</pose><geometry><box><size>7 0.2 1</size></box></geometry></collision>
+        <visual name="vw_n"><pose>0 3.5 0.5 0 0 0</pose><geometry><box><size>7 0.2 1</size></box></geometry><material><ambient>0.3 0.3 0.7 1</ambient><diffuse>0.3 0.3 0.7 1</diffuse><specular>0.1 0.1 0.1 1</specular></material></visual>
+        <collision name="w_s"><pose>0 -3.5 0.5 0 0 0</pose><geometry><box><size>7 0.2 1</size></box></geometry></collision>
+        <visual name="vw_s"><pose>0 -3.5 0.5 0 0 0</pose><geometry><box><size>7 0.2 1</size></box></geometry><material><ambient>0.3 0.3 0.7 1</ambient><diffuse>0.3 0.3 0.7 1</diffuse><specular>0.1 0.1 0.1 1</specular></material></visual>
+        <collision name="w_e"><pose>3.5 0 0.5 0 0 0</pose><geometry><box><size>0.2 7 1</size></box></geometry></collision>
+        <visual name="vw_e"><pose>3.5 0 0.5 0 0 0</pose><geometry><box><size>0.2 7 1</size></box></geometry><material><ambient>0.3 0.3 0.7 1</ambient><diffuse>0.3 0.3 0.7 1</diffuse><specular>0.1 0.1 0.1 1</specular></material></visual>
+        <collision name="w_w"><pose>-3.5 0 0.5 0 0 0</pose><geometry><box><size>0.2 7 1</size></box></geometry></collision>
+        <visual name="vw_w"><pose>-3.5 0 0.5 0 0 0</pose><geometry><box><size>0.2 7 1</size></box></geometry><material><ambient>0.3 0.3 0.7 1</ambient><diffuse>0.3 0.3 0.7 1</diffuse><specular>0.1 0.1 0.1 1</specular></material></visual>
+      </link>
+    </model>
+
+  </world>
+</sdf>

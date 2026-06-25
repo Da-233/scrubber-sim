@@ -1,8 +1,10 @@
 import os
 from launch import LaunchDescription
-from launch.actions import IncludeLaunchDescription
+from launch.actions import IncludeLaunchDescription, DeclareLaunchArgument
 from launch.launch_description_sources import PythonLaunchDescriptionSource
-from launch.substitutions import PathJoinSubstitution, Command, FindExecutable
+from launch.substitutions import (
+    PathJoinSubstitution, Command, FindExecutable, LaunchConfiguration,
+)
 from launch_ros.actions import Node
 from launch_ros.substitutions import FindPackageShare
 
@@ -11,8 +13,17 @@ def generate_launch_description():
     pkg_share = FindPackageShare("scrubber_sim")
     pkg_gz = FindPackageShare("ros_gz_sim")
 
+    # M5.3 A7: world 可切换（默认 simple_world.sdf 保持 M4 兼容；
+    # M5.3 用 room_7x7.sdf）。m5.launch.py 透传 world:= 参数。
+    world_arg = DeclareLaunchArgument(
+        "world", default_value="simple_world.sdf",
+        description="worlds/ 下的 sdf 文件名",
+    )
+
     urdf_path = PathJoinSubstitution([pkg_share, "urdf", "scrubber.urdf.xacro"])
-    world_path = PathJoinSubstitution([pkg_share, "worlds", "simple_world.sdf"])
+    world_path = PathJoinSubstitution([
+        pkg_share, "worlds", LaunchConfiguration("world"),
+    ])
 
     robot_description = Command([
         PathJoinSubstitution([FindExecutable(name="xacro")]), " ", urdf_path
@@ -37,6 +48,7 @@ def generate_launch_description():
     gz_spawn = Node(
         package="ros_gz_sim",
         executable="create",
+        # spawn 在 world 原点 (0,0,0)；SLAM 把 map 原点设在这
         arguments=["-topic", "/robot_description", "-name", "scrubber", "-x", "0", "-y", "0", "-z", "0.2"],
         output="screen",
     )
@@ -68,6 +80,7 @@ def generate_launch_description():
     )
 
     return LaunchDescription([
+        world_arg,
         gz_sim,
         robot_state_pub,
         gz_spawn,

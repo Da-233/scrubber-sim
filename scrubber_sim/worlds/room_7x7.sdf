@@ -1,0 +1,90 @@
+<?xml version="1.0" ?>
+<!--
+  M5.3 A7 场景：7×7m 房间 + 2 固定箱障
+  - 墙：x,y = ±3.5（7×7 内净空），给 SLAM 提供特征
+  - 箱障（footprint 0.5×0.5，高 0.8 确保 lidar 命中）：
+      Box A: center (1.2, 1.2)
+      Box B: center (-1.2, -1.0)
+    对应 area_7x7.yaml 的 voids（含机器人半宽余量 0.65 后为 [0.55,1.85]² / [-1.85,-0.55]×[-1.65,-0.35]）
+  - 机器人 spawn 在原点 (0,0)，避开两箱障，map 原点设此
+-->
+<sdf version="1.10">
+  <world name="room_7x7">
+    <scene>
+      <ambient>0.4 0.4 0.4 1</ambient>
+      <background>0.7 0.7 0.7 1</background>
+    </scene>
+
+    <physics name="1ms" type="ignored">
+      <max_step_size>0.001</max_step_size>
+      <real_time_factor>1</real_time_factor>
+    </physics>
+
+    <plugin filename="gz-sim-physics-system" name="gz::sim::systems::Physics"></plugin>
+    <plugin filename="gz-sim-user-commands-system" name="gz::sim::systems::UserCommands"></plugin>
+    <plugin filename="gz-sim-scene-broadcaster-system" name="gz::sim::systems::SceneBroadcaster"></plugin>
+
+    <light type="directional" name="sun">
+      <pose>0 0 10 0 0 0</pose>
+      <intensity>0.8</intensity>
+      <cast_shadows>true</cast_shadows>
+    </light>
+
+    <model name="ground_plane">
+      <static>true</static>
+      <link name="link">
+        <collision name="collision">
+          <geometry>
+            <plane><normal>0 0 1</normal><size>40 40</size></plane>
+          </geometry>
+        </collision>
+        <visual name="visual">
+          <geometry>
+            <plane><normal>0 0 1</normal><size>40 40</size></plane>
+          </geometry>
+          <material>
+            <ambient>0.6 0.6 0.6 1</ambient>
+            <diffuse>0.6 0.6 0.6 1</diffuse>
+            <specular>0.2 0.2 0.2 1</specular>
+          </material>
+        </visual>
+      </link>
+    </model>
+
+    <!-- 围墙：7x7 房间（墙中心在 ±3.5，墙长 7） -->
+    <model name="walls">
+      <static>true</static>
+      <link name="link">
+        <collision name="w_n"><pose>0 3.5 0.5 0 0 0</pose><geometry><box><size>7 0.2 1</size></box></geometry></collision>
+        <visual name="vw_n"><pose>0 3.5 0.5 0 0 0</pose><geometry><box><size>7 0.2 1</size></box></geometry><material><ambient>0.3 0.3 0.7 1</ambient><diffuse>0.3 0.3 0.7 1</diffuse><specular>0.1 0.1 0.1 1</specular></material></visual>
+        <collision name="w_s"><pose>0 -3.5 0.5 0 0 0</pose><geometry><box><size>7 0.2 1</size></box></geometry></collision>
+        <visual name="vw_s"><pose>0 -3.5 0.5 0 0 0</pose><geometry><box><size>7 0.2 1</size></box></geometry><material><ambient>0.3 0.3 0.7 1</ambient><diffuse>0.3 0.3 0.7 1</diffuse><specular>0.1 0.1 0.1 1</specular></material></visual>
+        <collision name="w_e"><pose>3.5 0 0.5 0 0 0</pose><geometry><box><size>0.2 7 1</size></box></geometry></collision>
+        <visual name="vw_e"><pose>3.5 0 0.5 0 0 0</pose><geometry><box><size>0.2 7 1</size></box></geometry><material><ambient>0.3 0.3 0.7 1</ambient><diffuse>0.3 0.3 0.7 1</diffuse><specular>0.1 0.1 0.1 1</specular></material></visual>
+        <collision name="w_w"><pose>-3.5 0 0.5 0 0 0</pose><geometry><box><size>0.2 7 1</size></box></geometry></collision>
+        <visual name="vw_w"><pose>-3.5 0 0.5 0 0 0</pose><geometry><box><size>0.2 7 1</size></box></geometry><material><ambient>0.3 0.3 0.7 1</ambient><diffuse>0.3 0.3 0.7 1</diffuse><specular>0.1 0.1 0.1 1</specular></material></visual>
+      </link>
+    </model>
+
+    <!-- 箱障 A: center (1.2, 1.2), 0.5x0.5x0.8 -->
+    <model name="box_a">
+      <static>true</static>
+      <pose>1.2 1.2 0.4 0 0 0</pose>
+      <link name="link">
+        <collision name="c"><geometry><box><size>0.5 0.5 0.8</size></box></geometry></collision>
+        <visual name="v"><geometry><box><size>0.5 0.5 0.8</size></box></geometry><material><ambient>0.7 0.4 0.2 1</ambient><diffuse>0.7 0.4 0.2 1</diffuse><specular>0.1 0.1 0.1 1</specular></material></visual>
+      </link>
+    </model>
+
+    <!-- 箱障 B: center (-1.2, -1.0), 0.5x0.5x0.8 -->
+    <model name="box_b">
+      <static>true</static>
+      <pose>-1.2 -1.0 0.4 0 0 0</pose>
+      <link name="link">
+        <collision name="c"><geometry><box><size>0.5 0.5 0.8</size></box></geometry></collision>
+        <visual name="v"><geometry><box><size>0.5 0.5 0.8</size></box></geometry><material><ambient>0.2 0.7 0.3 1</ambient><diffuse>0.2 0.7 0.3 1</diffuse><specular>0.1 0.1 0.1 1</specular></material></visual>
+      </link>
+    </model>
+
+  </world>
+</sdf>
