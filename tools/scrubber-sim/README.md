@@ -82,6 +82,68 @@ outer: [[x, y], ...]            # 清扫外圈
 voids: [[[x, y], ...], ...]     # 障碍 inner voids(从可清扫区挖掉 + 扫到报警)
 ```
 
+### ackermann_primitives (K0/O0/K1 完成；V1-odom 通过，truth 待修)
+
+阿卡曼运动学优先的覆盖路径工具。V0 25×25 + gz ground truth 已确认底盘能真实执行直线+大半径弧；K0 已实现纯算法层运动原语和曲率检查；O0 已实现本地标定分析层并完成远程 fresh 五组标定；K1 已实现纯弓字路径生成器与 CSV 导出 CLI。
+
+K0：
+- `Pose2D`
+- `sample_line`
+- `sample_arc`
+- `sample_u_turn`
+- `max_curvature`
+- `assert_curvature_within`
+
+O0：
+- `TimedPose2D`
+- `load_timed_xytheta_csv`
+- `align_by_time`
+- `compute_trajectory_error`
+- `fit_circle_radius`
+- `fit_arc_radius_by_distance_and_heading`
+- `estimate_turn_radius`
+
+K1：
+- `generate_lawnmower`
+- `BoustrophedonError`
+
+当前路线不是直接外围转圈，也不是先大修 odom，而是：
+
+```text
+K0 曲率/运动原语 ✅
+→ O0 标定分析层 + fresh 远程标定 ✅
+→ K1 纯弓字扫描 + CSV 导出 ✅
+→ V1 odom frame 控制层 ✅ / gz truth 未通过 ⚠️
+→ 先做左右转半径补偿，再重跑 V1 truth
+→ K3 外围转圈 + 内部弓字混合覆盖
+```
+
+关键原则：后轮驱动、前轮转向；无原地转、无 K-turn；仿真覆盖/越界判据用 gz truth，不单用 wheel odom。K1 初版要求 `lane_spacing == 2 * turn_radius`，让相邻扫线由标准半圆 U 掉头连接，避免暗藏小半径连接曲线。O0 fresh 标定显示直线 truth/odom 基本一致，但转弯稳定左右不对称：R2 左 truth≈2.36~2.57、右≈1.73~1.87；R3 左≈3.34~3.56、右≈2.71~2.84。因此 V1 当前只能算 odom 控制层通过，truth 覆盖还需左右半径补偿或修 gz 三轮底盘模型。
+
+测试：
+
+```bash
+cd tools/scrubber-sim
+PYTHONPATH=. pytest \
+  tests/test_ackermann_primitives.py \
+  tests/test_ackermann_calibration.py \
+  tests/test_ackermann_boustrophedon.py \
+  tests/test_ackermann_export_cli.py -q
+```
+
+导出 K1 路径：
+
+```bash
+PYTHONPATH=. python3 -m ackermann_primitives.cli generate-lawnmower \
+  --width 14 --height 12 \
+  --lane-spacing 4 --turn-radius 2 \
+  --margin 2 --step 0.2 \
+  --max-curvature 0.5 \
+  --output /tmp/k1_path.csv
+```
+
+详见 `ackermann_primitives/README.md`。
+
 ### contour_coverage (P1, M5.3 子系统#1)
 
 同心轮廓覆盖路径生成器（M5.3 spec §5.2 实现）。
